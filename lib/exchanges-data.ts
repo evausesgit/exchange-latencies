@@ -363,6 +363,38 @@ export const europeanConnections: LatencyConnection[] = [
     fiberLatencyMs: 6.23,
     microwaveLatencyMs: 3.16,
   },
+  {
+    id: "ld4-zh4",
+    from: "ld4",
+    to: "zh4",
+    distanceKm: 778,
+    fiberLatencyMs: 5.06,
+    microwaveLatencyMs: 2.57,
+  },
+  {
+    id: "ld4-ml2",
+    from: "ld4",
+    to: "ml2",
+    distanceKm: 958,
+    fiberLatencyMs: 6.23,
+    microwaveLatencyMs: 3.16,
+  },
+  {
+    id: "ld4-md2",
+    from: "ld4",
+    to: "md2",
+    distanceKm: 1264,
+    fiberLatencyMs: 8.22,
+    microwaveLatencyMs: 4.17,
+  },
+  {
+    id: "ld4-sk1",
+    from: "ld4",
+    to: "sk1",
+    distanceKm: 1435,
+    fiberLatencyMs: 9.33,
+    microwaveLatencyMs: 4.74,
+  },
 
   // Frankfurt (FR2) connections
   {
