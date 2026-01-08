@@ -94,29 +94,6 @@ export const europeanExchanges: Exchange[] = [
     type: "exchange",
   },
 
-  // Netherlands
-  {
-    id: "am3",
-    name: "Equinix AM3",
-    shortName: "AM3",
-    city: "Amsterdam",
-    country: "Netherlands",
-    continent: "europe",
-    coordinates: [4.9041, 52.3676],
-    type: "datacenter",
-    description: "Euronext Amsterdam data center",
-  },
-  {
-    id: "euronext-amsterdam",
-    name: "Euronext Amsterdam",
-    shortName: "ENX Amsterdam",
-    city: "Amsterdam",
-    country: "Netherlands",
-    continent: "europe",
-    coordinates: [4.8979, 52.3702],
-    type: "exchange",
-  },
-
   // Switzerland
   {
     id: "zh4",
@@ -372,14 +349,6 @@ export const europeanConnections: LatencyConnection[] = [
     fiberLatencyMs: 6.23,
     microwaveLatencyMs: 3.16,
   },
-  {
-    id: "ld4-am3",
-    from: "ld4",
-    to: "am3",
-    distanceKm: 358,
-    fiberLatencyMs: 2.33,
-    microwaveLatencyMs: 1.18,
-  },
 
   // Frankfurt (FR2) connections
   {
@@ -389,14 +358,6 @@ export const europeanConnections: LatencyConnection[] = [
     distanceKm: 415,
     fiberLatencyMs: 2.70,
     microwaveLatencyMs: 1.37,
-  },
-  {
-    id: "fr2-am3",
-    from: "fr2",
-    to: "am3",
-    distanceKm: 365,
-    fiberLatencyMs: 2.37,
-    microwaveLatencyMs: 1.2,
   },
   {
     id: "fr2-zh4",
@@ -425,14 +386,6 @@ export const europeanConnections: LatencyConnection[] = [
 
   // Bergamo (BG1) connections
   {
-    id: "bg1-am3",
-    from: "bg1",
-    to: "am3",
-    distanceKm: 725,
-    fiberLatencyMs: 4.71,
-    microwaveLatencyMs: 2.39,
-  },
-  {
     id: "bg1-zh4",
     from: "bg1",
     to: "zh4",
@@ -457,15 +410,6 @@ export const europeanConnections: LatencyConnection[] = [
     microwaveLatencyMs: 4.36,
   },
 
-  // Amsterdam (AM3) connections
-  {
-    id: "am3-sk1",
-    from: "am3",
-    to: "sk1",
-    distanceKm: 1132,
-    fiberLatencyMs: 7.36,
-    microwaveLatencyMs: 3.74,
-  },
 
   // Zurich (ZH4) connections
   {
@@ -650,16 +594,6 @@ export const transatlanticConnections: LatencyConnection[] = [
     isTransatlantic: true,
   },
 
-  // Amsterdam to NY
-  {
-    id: "am3-ny4",
-    from: "am3",
-    to: "ny4",
-    distanceKm: 5870,
-    fiberLatencyMs: 34.2,
-    microwaveLatencyMs: null,
-    isTransatlantic: true,
-  },
 
   // London to Toronto
   {
