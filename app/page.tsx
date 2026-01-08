@@ -11,10 +11,10 @@ import {
 } from "@/components/ui/map";
 import {
   allExchanges,
-  allConnections,
   getExchangeById,
   getExchangesByContinent,
   getConnectionsByContinent,
+  getConnectionsForExchange,
   getMicrowaveAdvantage,
   continentNames,
   type Exchange,
@@ -63,17 +63,10 @@ export default function Home() {
 
   // Get connections that should be visible
   const visibleConnections = useMemo(() => {
-    let connections: LatencyConnection[];
-
     if (selectedExchange) {
-      connections = allConnections.filter(
-        (c) => c.from === selectedExchange.id || c.to === selectedExchange.id
-      );
-    } else {
-      connections = getConnectionsByContinent(regionFilter);
+      return getConnectionsForExchange(selectedExchange.id);
     }
-
-    return connections;
+    return getConnectionsByContinent(regionFilter);
   }, [selectedExchange, regionFilter]);
 
   // Handle region change

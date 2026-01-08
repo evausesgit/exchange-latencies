@@ -11,6 +11,8 @@ export type Exchange = {
   coordinates: [number, number]; // [longitude, latitude]
   type: "exchange" | "datacenter";
   description?: string;
+  /** For exchanges: the associated datacenter ID (connections are between datacenters) */
+  datacenterId?: string;
 };
 
 export type LatencyConnection = {
@@ -46,6 +48,7 @@ export const europeanExchanges: Exchange[] = [
     continent: "europe",
     coordinates: [-0.0877, 51.5144],
     type: "exchange",
+    datacenterId: "ld4",
   },
 
   // Germany
@@ -69,6 +72,7 @@ export const europeanExchanges: Exchange[] = [
     continent: "europe",
     coordinates: [8.6724, 50.1095],
     type: "exchange",
+    datacenterId: "fr2",
   },
 
   // Italy - Bergamo (Euronext)
@@ -92,6 +96,7 @@ export const europeanExchanges: Exchange[] = [
     continent: "europe",
     coordinates: [9.6772, 45.6944],
     type: "exchange",
+    datacenterId: "bg1",
   },
 
   // Switzerland
@@ -115,6 +120,7 @@ export const europeanExchanges: Exchange[] = [
     continent: "europe",
     coordinates: [8.5394, 47.3667],
     type: "exchange",
+    datacenterId: "zh4",
   },
 
   // Italy
@@ -138,6 +144,7 @@ export const europeanExchanges: Exchange[] = [
     continent: "europe",
     coordinates: [9.1895, 45.4654],
     type: "exchange",
+    datacenterId: "ml2",
   },
 
   // Spain
@@ -161,6 +168,7 @@ export const europeanExchanges: Exchange[] = [
     continent: "europe",
     coordinates: [-3.6953, 40.4167],
     type: "exchange",
+    datacenterId: "md2",
   },
 
   // Sweden
@@ -184,6 +192,7 @@ export const europeanExchanges: Exchange[] = [
     continent: "europe",
     coordinates: [18.0649, 59.3326],
     type: "exchange",
+    datacenterId: "sk1",
   },
 ];
 
@@ -210,6 +219,7 @@ export const usExchanges: Exchange[] = [
     continent: "north-america",
     coordinates: [-73.986, 40.7569],
     type: "exchange",
+    datacenterId: "ny5",
   },
   {
     id: "ny4",
@@ -231,6 +241,7 @@ export const usExchanges: Exchange[] = [
     continent: "north-america",
     coordinates: [-74.0113, 40.7069],
     type: "exchange",
+    datacenterId: "ny4",
   },
   {
     id: "nj2",
@@ -266,6 +277,7 @@ export const usExchanges: Exchange[] = [
     coordinates: [-87.6324, 41.8823],
     type: "exchange",
     description: "Chicago Mercantile Exchange - Futures & Options",
+    datacenterId: "ch4",
   },
   {
     id: "cboe",
@@ -277,6 +289,7 @@ export const usExchanges: Exchange[] = [
     coordinates: [-87.6321, 41.8819],
     type: "exchange",
     description: "Chicago Board Options Exchange",
+    datacenterId: "ch4",
   },
 
   // Other US locations
@@ -324,6 +337,7 @@ export const usExchanges: Exchange[] = [
     continent: "north-america",
     coordinates: [-79.3795, 43.6481],
     type: "exchange",
+    datacenterId: "tr2",
   },
 ];
 
@@ -646,12 +660,15 @@ export function getExchangesByContinent(continent: Continent): Exchange[] {
   return allExchanges.filter((e) => e.continent === continent);
 }
 
-// Helper function to get all connections for an exchange
+// Helper function to get all connections for an exchange (uses datacenterId for exchanges)
 export function getConnectionsForExchange(
   exchangeId: string
 ): LatencyConnection[] {
+  const exchange = getExchangeById(exchangeId);
+  // If it's an exchange with a datacenter, use the datacenter ID for connections
+  const connectionId = exchange?.datacenterId || exchangeId;
   return allConnections.filter(
-    (c) => c.from === exchangeId || c.to === exchangeId
+    (c) => c.from === connectionId || c.to === connectionId
   );
 }
 
