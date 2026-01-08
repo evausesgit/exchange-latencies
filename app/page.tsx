@@ -210,6 +210,12 @@ export default function Home() {
               ];
               const hasMicrowave = connection.microwaveLatencyMs !== null;
 
+              // Calculate midpoint for label
+              const midLng =
+                (fromExchange.coordinates[0] + toExchange.coordinates[0]) / 2;
+              const midLat =
+                (fromExchange.coordinates[1] + toExchange.coordinates[1]) / 2;
+
               return (
                 <div key={connection.id}>
                   {/* Fiber Line */}
@@ -237,6 +243,45 @@ export default function Home() {
                         onClick={() => setSelectedConnection(connection)}
                       />
                     )}
+
+                  {/* Latency Label */}
+                  <MapMarker
+                    longitude={midLng}
+                    latitude={midLat}
+                    onClick={() => setSelectedConnection(connection)}
+                  >
+                    <MarkerContent>
+                      <div
+                        className={`flex flex-col items-center rounded px-1.5 py-0.5 text-[9px] font-medium shadow-sm cursor-pointer transition-transform hover:scale-110 ${
+                          isSelected
+                            ? "bg-white dark:bg-zinc-800 ring-2 ring-primary"
+                            : "bg-white/90 dark:bg-zinc-800/90"
+                        }`}
+                        onClick={() => setSelectedConnection(connection)}
+                      >
+                        {(connectionType === "fiber" || connectionType === "both") && (
+                          <span
+                            className={
+                              connection.isTransatlantic
+                                ? "text-violet-600 dark:text-violet-400"
+                                : "text-amber-600 dark:text-amber-400"
+                            }
+                          >
+                            {connection.fiberLatencyMs.toFixed(1)}ms
+                          </span>
+                        )}
+                        {(connectionType === "microwave" || connectionType === "both") &&
+                          hasMicrowave && (
+                            <span className="text-cyan-600 dark:text-cyan-400">
+                              {connection.microwaveLatencyMs!.toFixed(1)}ms
+                            </span>
+                          )}
+                        {connectionType === "both" && !hasMicrowave && (
+                          <span className="text-muted-foreground text-[8px]">N/A</span>
+                        )}
+                      </div>
+                    </MarkerContent>
+                  </MapMarker>
                 </div>
               );
             })}
