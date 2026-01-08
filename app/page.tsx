@@ -10,44 +10,78 @@ import {
   MapControls,
 } from "@/components/ui/map";
 import {
-  europeanExchanges,
-  latencyConnections,
+  allExchanges,
+  allConnections,
   getExchangeById,
+  getExchangesByContinent,
+  getConnectionsByContinent,
   getMicrowaveAdvantage,
+  continentNames,
   type Exchange,
   type LatencyConnection,
+  type Continent,
 } from "@/lib/exchanges-data";
 
 type ConnectionType = "fiber" | "microwave" | "both";
+type RegionFilter = Continent | "all" | "transatlantic";
+
+// Map center and zoom for each region
+const regionViews: Record<RegionFilter, { center: [number, number]; zoom: number }> = {
+  europe: { center: [8.5, 50], zoom: 4.5 },
+  "north-america": { center: [-90, 42], zoom: 4 },
+  all: { center: [-30, 45], zoom: 2.5 },
+  transatlantic: { center: [-30, 48], zoom: 2.8 },
+};
 
 export default function Home() {
-  const [selectedExchange, setSelectedExchange] = useState<Exchange | null>(
-    null
-  );
-  const [selectedConnection, setSelectedConnection] =
-    useState<LatencyConnection | null>(null);
+  const [selectedExchange, setSelectedExchange] = useState<Exchange | null>(null);
+  const [selectedConnection, setSelectedConnection] = useState<LatencyConnection | null>(null);
   const [connectionType, setConnectionType] = useState<ConnectionType>("both");
   const [showDatacenters, setShowDatacenters] = useState(true);
   const [showExchanges, setShowExchanges] = useState(true);
+  const [regionFilter, setRegionFilter] = useState<RegionFilter>("europe");
 
-  // Filter exchanges based on settings
+  // Get current view settings
+  const currentView = regionViews[regionFilter];
+
+  // Filter exchanges based on settings and region
   const visibleExchanges = useMemo(() => {
-    return europeanExchanges.filter((e) => {
+    let exchanges: Exchange[];
+
+    if (regionFilter === "all" || regionFilter === "transatlantic") {
+      exchanges = allExchanges;
+    } else {
+      exchanges = getExchangesByContinent(regionFilter);
+    }
+
+    return exchanges.filter((e) => {
       if (e.type === "datacenter" && !showDatacenters) return false;
       if (e.type === "exchange" && !showExchanges) return false;
       return true;
     });
-  }, [showDatacenters, showExchanges]);
+  }, [showDatacenters, showExchanges, regionFilter]);
 
   // Get connections that should be visible
   const visibleConnections = useMemo(() => {
+    let connections: LatencyConnection[];
+
     if (selectedExchange) {
-      return latencyConnections.filter(
+      connections = allConnections.filter(
         (c) => c.from === selectedExchange.id || c.to === selectedExchange.id
       );
+    } else {
+      connections = getConnectionsByContinent(regionFilter);
     }
-    return latencyConnections;
-  }, [selectedExchange]);
+
+    return connections;
+  }, [selectedExchange, regionFilter]);
+
+  // Handle region change
+  const handleRegionChange = (newRegion: RegionFilter) => {
+    setRegionFilter(newRegion);
+    setSelectedExchange(null);
+    setSelectedConnection(null);
+  };
 
   return (
     <div className="flex h-screen w-screen flex-col">
@@ -56,13 +90,37 @@ export default function Home() {
         <div>
           <h1 className="text-lg font-semibold">Exchange Latencies</h1>
           <p className="text-sm text-muted-foreground">
-            Fiber vs Microwave - European Markets
+            Fiber vs Microwave - Global Markets
           </p>
         </div>
 
-        {/* Connection Type Toggle */}
         <div className="flex items-center gap-4">
+          {/* Region Filter */}
           <div className="flex items-center gap-2">
+            <label className="text-sm text-muted-foreground">Region:</label>
+            <div className="flex rounded-md border">
+              {(["europe", "north-america", "transatlantic", "all"] as RegionFilter[]).map(
+                (region, idx) => (
+                  <button
+                    key={region}
+                    onClick={() => handleRegionChange(region)}
+                    className={`px-3 py-1.5 text-xs font-medium transition-colors ${
+                      idx > 0 ? "border-l" : ""
+                    } ${
+                      regionFilter === region
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-accent"
+                    }`}
+                  >
+                    {continentNames[region]}
+                  </button>
+                )
+              )}
+            </div>
+          </div>
+
+          {/* Connection Type Toggle */}
+          <div className="flex items-center gap-2 border-l pl-4">
             <label className="text-sm text-muted-foreground">Show:</label>
             <div className="flex rounded-md border">
               <button
@@ -126,10 +184,11 @@ export default function Home() {
         {/* Map */}
         <div className="flex-1">
           <Map
-            center={[8.5, 50]}
-            zoom={4.5}
-            minZoom={3}
-            maxZoom={10}
+            key={regionFilter}
+            center={currentView.center}
+            zoom={currentView.zoom}
+            minZoom={2}
+            maxZoom={12}
           >
             <MapControls
               position="bottom-right"
@@ -149,6 +208,7 @@ export default function Home() {
                 fromExchange.coordinates,
                 toExchange.coordinates,
               ];
+              const hasMicrowave = connection.microwaveLatencyMs !== null;
 
               return (
                 <div key={connection.id}>
@@ -157,7 +217,7 @@ export default function Home() {
                     <MapRoute
                       id={`fiber-${connection.id}`}
                       coordinates={coordinates}
-                      color="#f59e0b"
+                      color={connection.isTransatlantic ? "#8b5cf6" : "#f59e0b"}
                       width={isSelected ? 4 : 2}
                       opacity={isSelected ? 1 : 0.6}
                       dashArray={[4, 2]}
@@ -165,18 +225,18 @@ export default function Home() {
                     />
                   )}
 
-                  {/* Microwave Line - offset slightly for visibility */}
-                  {(connectionType === "microwave" ||
-                    connectionType === "both") && (
-                    <MapRoute
-                      id={`microwave-${connection.id}`}
-                      coordinates={coordinates}
-                      color="#06b6d4"
-                      width={isSelected ? 4 : 2}
-                      opacity={isSelected ? 1 : 0.7}
-                      onClick={() => setSelectedConnection(connection)}
-                    />
-                  )}
+                  {/* Microwave Line */}
+                  {(connectionType === "microwave" || connectionType === "both") &&
+                    hasMicrowave && (
+                      <MapRoute
+                        id={`microwave-${connection.id}`}
+                        coordinates={coordinates}
+                        color="#06b6d4"
+                        width={isSelected ? 4 : 2}
+                        opacity={isSelected ? 1 : 0.7}
+                        onClick={() => setSelectedConnection(connection)}
+                      />
+                    )}
                 </div>
               );
             })}
@@ -200,7 +260,11 @@ export default function Home() {
                       exchange.type === "datacenter"
                         ? "border-emerald-300 bg-emerald-500"
                         : "border-blue-300 bg-blue-500"
-                    } ${selectedExchange?.id === exchange.id ? "ring-2 ring-white ring-offset-2 ring-offset-background scale-125" : ""}`}
+                    } ${
+                      selectedExchange?.id === exchange.id
+                        ? "ring-2 ring-white ring-offset-2 ring-offset-background scale-125"
+                        : ""
+                    }`}
                   >
                     <span className="text-[10px] font-bold text-white">
                       {exchange.type === "datacenter" ? "DC" : "EX"}
@@ -229,6 +293,10 @@ export default function Home() {
               <div className="flex items-center gap-2">
                 <div className="h-3 w-6 rounded bg-amber-500" />
                 <span>Fiber optic</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-3 w-6 rounded bg-violet-500" />
+                <span>Transatlantic fiber</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="h-3 w-6 rounded bg-cyan-500" />
@@ -300,52 +368,94 @@ export default function Home() {
                 <span className="font-medium">
                   {getExchangeById(selectedConnection.to)?.shortName}
                 </span>
+                {selectedConnection.isTransatlantic && (
+                  <span className="ml-2 rounded bg-violet-500/20 px-1.5 py-0.5 text-xs text-violet-600 dark:text-violet-400">
+                    Transatlantic
+                  </span>
+                )}
               </div>
 
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Distance</span>
                   <span className="font-medium">
-                    {selectedConnection.distanceKm} km
+                    {selectedConnection.distanceKm.toLocaleString()} km
                   </span>
                 </div>
 
-                <div className="rounded-md bg-amber-500/10 p-3">
+                <div
+                  className={`rounded-md p-3 ${
+                    selectedConnection.isTransatlantic
+                      ? "bg-violet-500/10"
+                      : "bg-amber-500/10"
+                  }`}
+                >
                   <div className="mb-1 flex items-center gap-2">
-                    <div className="h-2 w-4 rounded bg-amber-500" />
-                    <span className="text-sm font-medium">Fiber Optic</span>
+                    <div
+                      className={`h-2 w-4 rounded ${
+                        selectedConnection.isTransatlantic
+                          ? "bg-violet-500"
+                          : "bg-amber-500"
+                      }`}
+                    />
+                    <span className="text-sm font-medium">
+                      {selectedConnection.isTransatlantic
+                        ? "Submarine Fiber"
+                        : "Fiber Optic"}
+                    </span>
                   </div>
-                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  <div
+                    className={`text-2xl font-bold ${
+                      selectedConnection.isTransatlantic
+                        ? "text-violet-600 dark:text-violet-400"
+                        : "text-amber-600 dark:text-amber-400"
+                    }`}
+                  >
                     {selectedConnection.fiberLatencyMs.toFixed(2)} ms
                   </div>
                 </div>
 
-                <div className="rounded-md bg-cyan-500/10 p-3">
-                  <div className="mb-1 flex items-center gap-2">
-                    <div className="h-2 w-4 rounded bg-cyan-500" />
-                    <span className="text-sm font-medium">Microwave</span>
-                  </div>
-                  <div className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
-                    {selectedConnection.microwaveLatencyMs.toFixed(2)} ms
-                  </div>
-                </div>
+                {selectedConnection.microwaveLatencyMs !== null ? (
+                  <>
+                    <div className="rounded-md bg-cyan-500/10 p-3">
+                      <div className="mb-1 flex items-center gap-2">
+                        <div className="h-2 w-4 rounded bg-cyan-500" />
+                        <span className="text-sm font-medium">Microwave</span>
+                      </div>
+                      <div className="text-2xl font-bold text-cyan-600 dark:text-cyan-400">
+                        {selectedConnection.microwaveLatencyMs.toFixed(2)} ms
+                      </div>
+                    </div>
 
-                <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
-                  <div className="text-sm text-muted-foreground">
-                    Microwave Advantage
+                    <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3">
+                      <div className="text-sm text-muted-foreground">
+                        Microwave Advantage
+                      </div>
+                      <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                        {getMicrowaveAdvantage(selectedConnection)}% faster
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Saves{" "}
+                        {(
+                          selectedConnection.fiberLatencyMs -
+                          selectedConnection.microwaveLatencyMs
+                        ).toFixed(2)}{" "}
+                        ms per trip
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="rounded-md border border-muted bg-muted/30 p-3">
+                    <div className="text-sm text-muted-foreground">
+                      Microwave not available
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {selectedConnection.isTransatlantic
+                        ? "Cannot cross oceans"
+                        : "Distance too far for line-of-sight"}
+                    </div>
                   </div>
-                  <div className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                    {getMicrowaveAdvantage(selectedConnection)}% faster
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Saves{" "}
-                    {(
-                      selectedConnection.fiberLatencyMs -
-                      selectedConnection.microwaveLatencyMs
-                    ).toFixed(2)}{" "}
-                    ms per trip
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -355,7 +465,7 @@ export default function Home() {
             <h3 className="mb-3 font-semibold">
               {selectedExchange
                 ? `Connections from ${selectedExchange.shortName}`
-                : "All Connections"}
+                : `${continentNames[regionFilter]} Connections`}
             </h3>
             <div className="space-y-2">
               {visibleConnections.map((connection) => {
@@ -378,16 +488,26 @@ export default function Home() {
                         {fromExchange.shortName} &harr; {toExchange.shortName}
                       </span>
                       <span className="text-muted-foreground">
-                        {connection.distanceKm} km
+                        {connection.distanceKm.toLocaleString()} km
                       </span>
                     </div>
                     <div className="mt-1 flex gap-4 text-xs">
-                      <span className="text-amber-600 dark:text-amber-400">
+                      <span
+                        className={
+                          connection.isTransatlantic
+                            ? "text-violet-600 dark:text-violet-400"
+                            : "text-amber-600 dark:text-amber-400"
+                        }
+                      >
                         Fiber: {connection.fiberLatencyMs.toFixed(2)} ms
                       </span>
-                      <span className="text-cyan-600 dark:text-cyan-400">
-                        MW: {connection.microwaveLatencyMs.toFixed(2)} ms
-                      </span>
+                      {connection.microwaveLatencyMs !== null ? (
+                        <span className="text-cyan-600 dark:text-cyan-400">
+                          MW: {connection.microwaveLatencyMs.toFixed(2)} ms
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">MW: N/A</span>
+                      )}
                     </div>
                   </button>
                 );
