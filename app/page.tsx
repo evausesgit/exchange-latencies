@@ -173,9 +173,9 @@ export default function Home() {
       </header>
 
       {/* Main Content */}
-      <div className="relative flex flex-1">
+      <div className="relative flex flex-1 overflow-hidden">
         {/* Map */}
-        <div className="flex-1">
+        <div className="flex-1 overflow-hidden">
           <Map
             key={regionFilter}
             center={currentView.center}
@@ -323,7 +323,7 @@ export default function Home() {
         </div>
 
         {/* Side Panel */}
-        <aside className="w-80 overflow-y-auto border-l bg-background p-4">
+        <aside className="w-80 shrink-0 overflow-y-auto border-l bg-background p-4">
           {/* Legend */}
           <div className="mb-6">
             <h3 className="mb-3 font-semibold">Legend</h3>
