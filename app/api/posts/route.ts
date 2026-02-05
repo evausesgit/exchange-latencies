@@ -4,7 +4,7 @@ import { initDb, getDb } from "@/lib/db";
 export async function GET() {
   await initDb();
   const db = getDb();
-  const { rows } = await db`SELECT * FROM posts ORDER BY updated_at DESC`;
+  const { rows } = await db`SELECT * FROM posts ORDER BY name ASC`;
   return NextResponse.json({ blobs: rows });
 }
 
